@@ -3,7 +3,8 @@
  */
 /*************TELEGRAM**********/
 var TelegramBot = require('node-telegram-bot-api');
-var token = '';
+var request = require('request');
+var token = '157812184:AAHFgYms2o5NWp-Z-Vgfyt_dQvOR8pFh3Dw';
 var bot = new TelegramBot(token, {polling: true});
 /*********MONGODB*************/
 /*
@@ -20,8 +21,8 @@ bot.onText(/\/hello/, function (msg) {
         reply_markup: JSON.stringify({
             keyboard: [
                 ['/hello'],
-                ['/time', '/date'], ['/echo'],
-                ['/getPhoto', '/getAudio', '/getSmth'],
+                ['/time', '/echo'],
+                ['/photo', '/audio', '/smth'],
                 ['/help']]
         })
     };
@@ -38,19 +39,28 @@ bot.onText(/\/time/, function (msg) {
 
     bot.sendMessage(chatId, text);
 });
+bot.onText(/\/date/, function (msg) {
+    var chatId = msg.chat.id;
+    var currentTime = new Date()
+    var date = ((currentTime.getDay() < 10) ? '0' + currentTime.getDay() : currentTime.getDay() )+ '.' + currentTime.getMonth() + '.' + currentTime.getFullYear();
+    //var minutes = currentTime.getMinutes()
 
+    console.log(date)
+
+    bot.sendMessage(chatId, date);
+});
 
 bot.onText(/\/help/, function (msg) {
     var chatId = msg.chat.id;
     var text = 'Use command:\n' +
-        '/hello /time /date /getPhoto /getAudio /getSmth /help';
+        '/hello /time /date /photo /audio /smth /help';
 
     bot.sendMessage(chatId, text);
 });
 
-bot.onText(/\/getPhoto/, function (msg) {
+bot.onText(/\/photo/, function (msg) {
     var chatId = msg.chat.id;
-    var photo = __dirname + '/img/doge.jpg';
+    var photo = __dirname + '/img/picture_1.jpg';
     bot.sendPhoto(chatId, photo, {caption: "Cool Doge Bro!"});
 });
 bot.onText(/\/echo (.+)/, function (msg, match) {
@@ -58,19 +68,23 @@ bot.onText(/\/echo (.+)/, function (msg, match) {
     var resp = match[1];
     bot.sendMessage(chatId, resp);
 });
-bot.onText(/\/getAudio/, function (msg) {
+bot.onText(/\/audio/, function (msg) {
     var chatId = msg.chat.id;
-    var url = 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg';
+    var url = '';
     // From HTTP request!
-    var audio = request(url);
 
-    bot.sendAudio(chatId, audio)
-        .then(function (resp) {
-            console.log(resp)
-            // Forward the msg
-            var messageId = resp.message_id;
-            bot.forwardMessage(chatId, chatId, messageId);
-        });
+    try {
+        var audio = request(url);
+        bot.sendAudio(chatId, audio);
+    }
+    catch (ex) {
+        console.log("ex-->", ex)
+    }
+    //.then(function (resp) {
+    //    // Forward the msg
+    //    var messageId = resp.message_id;
+    //    bot.forwardMessage(chatId, chatId, messageId);
+    //});
 });
 //
 
