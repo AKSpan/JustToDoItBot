@@ -1,1 +1,1 @@
-npm install telegram-bot-api
+npm install node-telegram-bot-api
