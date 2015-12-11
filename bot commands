@@ -1,0 +1,6 @@
+commands - List of bot commands
+list - Your task list
+doit - Set task with %number% as completed
+expired - List of expired tasks
+delete - Delete task with number
+help - Can bot help you?
