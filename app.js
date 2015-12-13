@@ -3,19 +3,21 @@
  */
 /*************TELEGRAM**********/
 var TelegramBot = require('node-telegram-bot-api');
-var token = '';
+var token = '161469040:AAGSc75wHt_bIaHKWDROuNMO2Tllm_GxZkU';
 var bot = new TelegramBot(token, {polling: true});
 /*********MONGODB*************/
 var MongoClient = require('mongodb').MongoClient, assert = require('assert');
 var url = 'mongodb://localhost:27017/akdb';
 var DB_NAME = 'list_task';
 var keyboard_btns = [
-    ['/list', '/add'],
-    ['/commands', '/help']
+    ['/test']
+    /*['/list', '/add'],
+    ['/commands', '/help']*/
 ];
 var OPTS = {
     reply_markup: JSON.stringify({
-        keyboard: keyboard_btns
+        keyboard: keyboard_btns,
+        parse_mode: "Markdown"
     })
 };
 
@@ -31,13 +33,13 @@ bot.onText(/\/start/, function (msg) {
  */
 bot.onText(/\/commands/, function (msg) {
     var chatId = msg.chat.id;
-    var text = "/commands - Show bot commands list\n" +
+    var text = "/commands - *bold text*Show bot commands list\n" +
         "/list - Show your tasks list\n" +
-        "/task %dd.mm.yyyy% - Show your tasks at selected date\n" +
-        "/task %number% - Show task with selected number\n" +
+        "/task d%dd.mm.yyyy% - Show your tasks at selected date\n" +
+        "/task n%number% - Show task with selected number\n" +
         "/doit %number% - Set task with %number% as completed\n" +
         "/expired - Your expired tasks";
-    bot.sendMessage(chatId, text, OPTS);
+    bot.sendMessage(chatId, "*bold* _italic_ [link](http://google.com).", OPTS);
 });
 /**
  * Получение списка задач
@@ -68,9 +70,10 @@ bot.onText(/\/list/, function (msg) {
 });
 bot.onText(/\/test/, function (msg) {
     var chatId = msg.chat.id;
-    console.log()
-    bot.sendMessage(chatId, 'test');
-    bot.getUpdates();
+    console.log(msg)
+    bot.getUpdates()[-1].then(function(data){console.log("data",data)})
+   /* bot.sendMessage(chatId, 'test');
+    bot.getUpdates();*/
 });
 
 
@@ -82,33 +85,78 @@ bot.onText(/\/test/, function (msg) {
  */
 bot.onText(/\/task (.+)/, function (msg, match) {
     var task_query = match[1];
+    console.log("match", task_query)
     MongoClient.connect(url, function (err, db) {
         assert.equal(null, err);
         var chatId = msg.chat.id;
         var userId = msg.from.id;
         var text = '';
-        var opts;
+        var opts = null;
         try {
-            if (task_query.indexOf('.') < 0)
-                opts = {owner_id: userId, task_number: parseInt(task_query)};
-            else
-                opts = {owner_id: userId, do_date: new RegExp('^' + task_query)};
-            findDocuments(db, opts, function (data) {
+            //number
+            if (task_query.startsWith('n'))
+                opts = {owner_id: userId, task_number: parseInt(task_query.replace('n', ''))};
+            //date
+            if (task_query.startsWith('d'))
+                opts = {owner_id: userId, do_date: new RegExp(task_query.replace('d', ''))};
+            if (opts != null)
+                findDocuments(db, opts, function (data) {
 
-                if (data.length > 0)
-                    for (var i = 0; i < data.length; i++)
-                        text += printTaskText(data[i]);
-                else
-                    text = 'Sorry, but nothing found.';
-                db.close();
-                bot.sendMessage(chatId, text, OPTS);
-            });
+                    if (data.length > 0)
+                        for (var i = 0; i < data.length; i++)
+                            text += printTaskText(data[i]);
+                    else
+                        text = 'Sorry, but nothing found.';
+                    db.close();
+                    bot.sendMessage(chatId, text, OPTS);
+                });
+            else
+                bot.sendMessage(chatId, "Error. Use /task n%number% for searching by task number\nand /task d%date% - by date.");
         }
         catch (ex) {
             console.log("ex---->", ex)
             bot.sendMessage(chatId, "Something gonna wrong ;(");
         }
     });
+});
+/**
+ * Отметить задание с номером как выполненое
+ */
+bot.onText(/\/doit (.+)/, function (msg) {
+    /*var task_query = match[1];
+    console.log("match", task_query)
+    MongoClient.connect(url, function (err, db) {
+        assert.equal(null, err);
+        var chatId = msg.chat.id;
+        var userId = msg.from.id;
+        var text = '';
+        var opts = null;
+        try {
+            //number
+            if (task_query.startsWith('n'))
+                opts = {owner_id: userId, task_number: parseInt(task_query.replace('n', ''))};
+            //date
+            if (task_query.startsWith('d'))
+                opts = {owner_id: userId, do_date: new RegExp(task_query.replace('d', ''))};
+            if (opts != null)
+                findDocuments(db, opts, function (data) {
+
+                    if (data.length > 0)
+                        for (var i = 0; i < data.length; i++)
+                            text += printTaskText(data[i]);
+                    else
+                        text = 'Sorry, but nothing found.';
+                    db.close();
+                    bot.sendMessage(chatId, text, OPTS);
+                });
+            else
+                bot.sendMessage(chatId, "Error. Use /task n%number% for searching by task number\nand /task d%date% - by date.");
+        }
+        catch (ex) {
+            console.log("ex---->", ex)
+            bot.sendMessage(chatId, "Something gonna wrong ;(");
+        }
+    });*/
 });
 var printTaskText = function (data) {
     /** @namespace data.task_text */
