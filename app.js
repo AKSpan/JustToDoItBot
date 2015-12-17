@@ -3,7 +3,7 @@
  */
 /*************TELEGRAM**********/
 var TelegramBot = require('node-telegram-bot-api');
-var token = '161469040:AAGSc75wHt_bIaHKWDROuNMO2Tllm_GxZkU';
+var token = '';
 var bot = new TelegramBot(token, {polling: true});
 /*********MONGODB*************/
 var MongoClient = require('mongodb').MongoClient, assert = require('assert');
