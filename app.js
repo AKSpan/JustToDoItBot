@@ -3,12 +3,16 @@
  */
 /*************TELEGRAM**********/
 var TelegramBot = require('node-telegram-bot-api');
-var token = '';
+var token = '161469040:AAGSc75wHt_bIaHKWDROuNMO2Tllm_GxZkU';
 var bot = new TelegramBot(token, {polling: true});
 /*********MONGODB*************/
 var MongoClient = require('mongodb').MongoClient, assert = require('assert');
-var url = 'mongodb://localhost:27017/akdb';
+var URL = 'mongodb://localhost:27017/akdb';
 var DB_NAME = 'list_task';
+
+var USER_LAST_COMMAND = null;
+var USER_LAST_ADD_COMMAND = null;
+var USER_ADD_TASK_ARRAY = {};
 var keyboard_btns = [
     ['/list', '/add'],
     ['/commands', '/help']
@@ -20,6 +24,7 @@ var OPTS = {
 };
 
 bot.onText(/\/start/, function (msg) {
+    USER_LAST_COMMAND = 'start';
     console.log("msg", msg)
     var chatId = msg.chat.id;
     var opts = OPTS;
@@ -30,6 +35,7 @@ bot.onText(/\/start/, function (msg) {
  * Список команд
  */
 bot.onText(/\/commands/, function (msg) {
+    USER_LAST_COMMAND = 'commands';
     var chatId = msg.chat.id;
     var text = "/commands - Show bot commands list\n" +
         "/list - Show your tasks list\n" +
@@ -43,8 +49,9 @@ bot.onText(/\/commands/, function (msg) {
  * Получение списка задач
  */
 bot.onText(/\/list/, function (msg) {
+    USER_LAST_COMMAND = 'list';
     console.log(msg)
-    MongoClient.connect(url, function (err, db) {
+    MongoClient.connect(URL, function (err, db) {
         assert.equal(null, err);
         var chatId = msg.chat.id;
         var userId = msg.from.id;
@@ -66,13 +73,72 @@ bot.onText(/\/list/, function (msg) {
         }
     });
 });
-bot.onText(/\/test/, function (msg) {
+bot.onText(/\/add/, function (msg) {
+    USER_LAST_COMMAND = 'add';
+    USER_LAST_ADD_COMMAND = "text";
     var chatId = msg.chat.id;
-    console.log()
-    bot.sendMessage(chatId, 'test');
-    bot.getUpdates();
+    var text = 'Write and send TASK TEXT (send /cancel to abort operation):';
+    bot.sendMessage(chatId, text);
 });
+bot.onText(/\/РУ/, function (msg) {
+   console.log('русский текст')
+});
+bot.onText(/\/cancel/, function (msg) {
+    var chatId = msg.chat.id
+    if (USER_LAST_COMMAND != null) {
+        USER_LAST_COMMAND = null;
+        USER_LAST_ADD_COMMAND = null;
+        USER_ADD_TASK_ARRAY = {};
+        console.log(msg.text);
+        var text = 'Operation canceled!';
+        bot.sendMessage(chatId, text);
+    }
+    else {
+        var text = 'Nothing to cancel!';
+        bot.sendMessage(chatId, text);
+    }
+});
+bot.onText(/^[a-z0-9а-я\.\\:\s]*$/i, function (msg) {
+    console.log(msg);
+    console.log("USER_LAST_COMMAND", USER_LAST_COMMAND);
+    console.log("USER_LAST_ADD_COMMAND", USER_LAST_ADD_COMMAND);
+    getSysdate();
+    var chatId = msg.chat.id;
+    switch (USER_LAST_COMMAND) {
+        default:
 
+            break;
+        case 'add':
+            if (USER_LAST_ADD_COMMAND === 'text') {
+                USER_ADD_TASK_ARRAY["task_text"] = msg.text;
+                USER_LAST_ADD_COMMAND = "do_date";
+                var text = 'Write date of completion (send /cancel to abort operation):';
+                bot.sendMessage(chatId, text);
+                break;
+            }
+            if (USER_LAST_ADD_COMMAND === 'do_date') {
+                USER_LAST_COMMAND = null;
+                USER_LAST_ADD_COMMAND = null;
+                USER_ADD_TASK_ARRAY["do_date"] = msg.text;
+                /******Write in DB******/
+                var opts = {
+                    owner_id: msg.from.id,
+                    do_date: USER_ADD_TASK_ARRAY.do_date,
+                    task_text: USER_ADD_TASK_ARRAY.task_text
+                };
+                MongoClient.connect(URL, function (err, db) {
+                    insertDocument(db, opts);
+                    var text = 'Task is added!';
+                    bot.sendMessage(chatId, text);
+                });
+                console.log("opts", opts);
+                /**********END**********/
+                USER_ADD_TASK_ARRAY = {};
+                break;
+            }
+            break;
+    }
+});
 
 /**
  * Получение списка задач по параметру.
@@ -81,8 +147,10 @@ bot.onText(/\/test/, function (msg) {
  * Работает как like start with (Ex. '12.12%')
  */
 bot.onText(/\/task (.+)/, function (msg, match) {
+
     var task_query = match[1];
-    MongoClient.connect(url, function (err, db) {
+    USER_LAST_COMMAND = 'task ' + task_query;
+    MongoClient.connect(URL, function (err, db) {
         assert.equal(null, err);
         var chatId = msg.chat.id;
         var userId = msg.from.id;
@@ -124,25 +192,65 @@ var printTaskText = function (data) {
         "Created date: " + data.created_date + "\n";
 }
 /*****MONGO FUNCTIONS******/
-
 var findDocuments = function (db, opts, callback) {
     // Get the documents collection
     var collection = db.collection(DB_NAME);
     // Find some documents
+
     collection.find(opts).toArray(function (err, docs) {
         callback(docs);
     });
 };
-var insertDocuments = function (db, callback) {
-    var collection = db.collection('documents');
-    collection.insertMany([
-        {a: 1}, {a: 2}, {a: 3}
-    ], function (err, result) {
-        assert.equal(err, null);
-        assert.equal(3, result.result.n);
-        assert.equal(3, result.ops.length);
-        console.log("Inserted 3 documents into the document collection");
-        callback(result);
+/**
+ * Get current sysdate
+ * @returns {Date}
+ */
+var getSysdate = function () {
+    var today = new Date();
+    var dd = today.getDate();
+    var mm = today.getMonth() + 1; //January is 0!
+    var yyyy = today.getFullYear();
+    var hh = today.getHours();
+    var mins = today.getMinutes();
+    var ss = today.getSeconds();
+    if (dd < 10) dd = '0' + dd;
+    if (mm < 10) mm = '0' + mm;
+    if (hh < 10) hh = '0' + hh;
+    if (mins < 10) mins = '0' + mins;
+    if (ss < 10) ss = '0' + ss;
+    today = mm + '.' + dd + '.' + yyyy + ' ' + hh + ':' + mins + ':' + ss;
+    console.log(today);
+    return today;
+};
+/**
+ * Insert new task.
+ * @param db MongoClient connect db
+ * @param opts object, containing fields: owner_id, do_date, task_text
+ */
+var insertDocument = function (db, opts) {
+    console.log('insert doc');
+    console.log(opts);
+    var collection = db.collection(DB_NAME);
+
+    collection.find({owner_id: opts.owner_id}).sort({_id: -1}).limit(1).toArray(function (err, docs) {
+        console.log('find docs',docs,'docs[0]',docs[0])
+        var last_task_number =  docs[0].task_number;
+        last_task_number = last_task_number>0?last_task_number:0;
+
+        var newTask = {
+            owner_id: opts.owner_id,
+            created_date: getSysdate(),
+            do_date: opts.do_date,
+            done_date: '',
+            is_done: false,
+            task_text: opts.task_text,
+            task_number:last_task_number + 1
+        };
+        console.log(newTask)
+        collection.insertOne(newTask, function (xqr) {
+            console.log('answer insert', xqr)
+        });
+
     });
 };
 var updateDocument = function (db, callback) {
