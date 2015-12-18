@@ -3,13 +3,12 @@
  */
 /*****MONGO FUNCTIONS******/
 var DB_NAME = 'list_task';
-var utils = require('./app');
+var utils = require('./bot');
 var findDocuments = function (db, opts, callback) {
     // Get the documents collection
     var collection = db.collection(DB_NAME);
     // Find some documents
-    collection.find(opts).toArray(function (err, docs) {
-        console.log('find', docs);
+    collection.find(opts).limit(10).toArray(function (err, docs) {
         callback(docs);
     });
 };

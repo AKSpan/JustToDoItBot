@@ -1,2 +1,2 @@
-npm install node-telegram-bot-api
+npm install telebot
 npm install mongodb --save
