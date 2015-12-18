@@ -3,12 +3,12 @@
  */
 /*************TELEGRAM**********/
 var TelegramBot = require('node-telegram-bot-api');
-var token = '';
+var token = require('./token').token;
 var bot = new TelegramBot(token, {polling: true});
 /*********MONGODB*************/
-var MongoClient = require('mongodb').MongoClient, assert = require('assert');
+var MongoClient = require('mongodb').MongoClient;
 var URL = 'mongodb://localhost:27017/akdb';
-var DB_NAME = 'list_task';
+var MongoOp = require('./mongoOperations');
 /*************VARS************/
 var USER_LAST_COMMAND = null;
 var USER_LAST_ADD_COMMAND = null;
@@ -43,15 +43,14 @@ bot.onText(/\/help/, function (msg) {
  * Get a list of tasks
  */
 bot.onText(/\/list/, function (msg) {
-    console.log("/list", msg)
+    console.log("/list", msg);
     USER_LAST_COMMAND = 'list';
     MongoClient.connect(URL, function (err, db) {
-        assert.equal(null, err);
         var chatId = msg.chat.id;
         var userId = msg.from.id;
         try {
             var opts = {owner_id: userId};
-            findDocuments(db, opts, function (data) {
+            MongoOp.findDocuments(db, opts, function (data) {
                 var text = '';
                 if (data.length > 0)
                     for (var i = 0; i < data.length; i++) {
@@ -66,7 +65,7 @@ bot.onText(/\/list/, function (msg) {
         }
         catch (ex) {
             console.log(ex);
-            var text = "Error. Cannot find tasks. Try again or later!"
+            var text = "Error. Cannot find tasks. Try again or later!";
             bot.sendMessage(chatId, text);
         }
     });
@@ -132,16 +131,15 @@ bot.onText(/\/(task)$/, function (msg) {
  * Set task with specified id as completed
  */
 bot.onText(/\/doit (.+)/, function (msg, match) {
-    console.log('doit')
+    console.log('doit');
     var id = match[1];
     MongoClient.connect(URL, function (err, db) {
-        assert.equal(null, err);
         var chatId = msg.chat.id;
         var userId = msg.from.id;
         try {
             var opts = {owner_id: userId, task_number: parseInt(id)};
-            console.log("opts", opts)
-            updateDocument(db, opts, function (data) {
+            console.log("opts", opts);
+            MongoOp.updateDocument(db, opts, function (data) {
                 // console.log(data);
                 console.log(data.result.nModified);
                 var text = '';
@@ -154,7 +152,7 @@ bot.onText(/\/doit (.+)/, function (msg, match) {
         }
         catch (ex) {
             console.log(ex);
-            var text = "Error. Cannot find tasks. Try again or later!"
+            var text = "Error. Cannot find tasks. Try again or later!";
             bot.sendMessage(chatId, text);
         }
     });
@@ -164,51 +162,7 @@ bot.onText(/\/(doit)$/, function (msg) {
     var text = 'Use \'/doit <number>\' to complete task.';
     bot.sendMessage(msg.chat.id, text);
 });
-/*****MONGO FUNCTIONS******/
-var findDocuments = function (db, opts, callback) {
-    // Get the documents collection
-    var collection = db.collection(DB_NAME);
-    // Find some documents
-    collection.find(opts).toArray(function (err, docs) {
-        console.log('find', docs)
-        callback(docs);
-    });
-};
-/**
- * Insert new task.
- * @param db MongoClient connect db
- * @param opts object, containing fields: owner_id, do_date, task_text
- */
-var insertDocument = function (db, opts) {
-    console.log('insert doc');
-    var collection = db.collection(DB_NAME);
 
-    collection.find({owner_id: opts.owner_id}).sort({_id: -1}).limit(1).toArray(function (err, docs) {
-        var last_task_number = (docs != null && docs.length > 0 && docs[0].task_number > 0 ) ? docs[0].task_number : 0;
-        last_task_number = last_task_number > 0 ? last_task_number : 0;
-
-        var newTask = {
-            owner_id: opts.owner_id,
-            created_date: getSysdate(),
-            do_date: opts.do_date,
-            done_date: '',
-            is_done: false,
-            task_text: opts.task_text,
-            task_number: last_task_number + 1
-        };
-        collection.insertOne(newTask, function (xqr) {
-            console.log('answer insert', xqr)
-        });
-
-    });
-};
-var updateDocument = function (db, opts, callback) {
-    var collection = db.collection(DB_NAME);
-    collection.updateOne(opts, {$set: {is_done: true, done_date: getSysdate()}}, function (err, result) {
-        db.close();
-        callback(result);
-    });
-};
 //var deleteDocument = function (db, callback) {
 //    // Get the documents collection
 //    var collection = db.collection('documents');
@@ -252,6 +206,7 @@ var getSysdate = function () {
     console.log(today);
     return today;
 };
+module.exports.getSysdate = getSysdate;
 var addNewTaskWorker = function (msg) {
     console.log("addNewTaskWorker", msg);
     console.log("USER_LAST_COMMAND", USER_LAST_COMMAND);
@@ -279,7 +234,7 @@ var addNewTaskWorker = function (msg) {
                     task_text: USER_ADD_TASK_ARRAY.task_text
                 };
                 MongoClient.connect(URL, function (err, db) {
-                    insertDocument(db, opts);
+                    MongoOp.insertDocument(db, opts);
                     var text = 'Task is added!';
                     bot.sendMessage(chatId, text);
                 });
@@ -298,7 +253,6 @@ var getTaskWorker = function (msg, task_query) {
     var chatId = msg.chat.id;
     if (task_query != null) {
         MongoClient.connect(URL, function (err, db) {
-            assert.equal(null, err);
             var userId = msg.from.id;
             var text = '';
             var opts;
@@ -307,7 +261,7 @@ var getTaskWorker = function (msg, task_query) {
                     opts = {owner_id: userId, task_number: parseInt(task_query)};
                 else
                     opts = {owner_id: userId, do_date: new RegExp('^' + task_query)};
-                findDocuments(db, opts, function (data) {
+                MongoOp.findDocuments(db, opts, function (data) {
 
                     if (data.length > 0)
                         for (var i = 0; i < data.length; i++)
@@ -319,7 +273,7 @@ var getTaskWorker = function (msg, task_query) {
                 });
             }
             catch (ex) {
-                console.log("ex---->", ex)
+                console.log("ex---->", ex);
                 bot.sendMessage(chatId, "Something gonna wrong ;(");
             }
         });
