@@ -3,11 +3,9 @@
  */
 /*****MONGO FUNCTIONS******/
 var DB_NAME = 'list_task';
-var utils = require('./bot');
+var utils = require('./../bot');
 var findDocuments = function (db, opts, callback) {
-    // Get the documents collection
     var collection = db.collection(DB_NAME);
-    // Find some documents
     collection.find(opts).limit(10).toArray(function (err, docs) {
         callback(docs);
     });
@@ -17,9 +15,9 @@ module.exports.findDocuments = findDocuments;
  * Insert new task.
  * @param db MongoClient connect db
  * @param opts object, containing fields: owner_id, do_date, task_text
+ * @param callback
  */
-var insertDocument = function (db, opts) {
-    console.log('insert doc');
+var insertDocument = function (db, opts, callback) {
     var collection = db.collection(DB_NAME);
 
     collection.find({owner_id: opts.owner_id}).sort({_id: -1}).limit(1).toArray(function (err, docs) {
@@ -35,8 +33,9 @@ var insertDocument = function (db, opts) {
             task_text: opts.task_text,
             task_number: last_task_number + 1
         };
-        collection.insertOne(newTask, function (xqr) {
-            console.log('answer insert', xqr)
+        collection.insertOne(newTask, function (err, result) {
+            db.close();
+            callback(result);
         });
 
     });
@@ -50,3 +49,11 @@ var updateDocument = function (db, opts, callback) {
     });
 };
 module.exports.updateDocument = updateDocument;
+var deleteDocument = function (db, opts, callback) {
+    var collection = db.collection(DB_NAME);
+    collection.deleteOne(opts, function (err, result) {
+        db.close();
+        callback(result);
+    });
+};
+module.exports.deleteDocument = deleteDocument;
