@@ -17,21 +17,28 @@ var bot = new TeleBot({
     timeout: 0, // Update pulling timeout (0 - short polling)
     limit: 100 // Limits the number of updates to be retrieved
 });
-var keyboard_btns = bot.keyboard([
+var main_keyboard_btns = bot.keyboard([
     ['/list', '/task'],
     ['/add', '/doit'],
     ['/expired', '/delete'],
     ['/help']
 ], {resize: true, once: false});
-var KEYBOARD = {
-    markup: keyboard_btns
+var secondary_keyboard_btns = bot.keyboard([
+    ['/id', '/date'],
+    ['/cancel']
+], {resize: true, once: false});
+var MAIN_KEYBOARD = {
+    markup: main_keyboard_btns
+};
+var SECOND_KEYBOARD = {
+    markup: secondary_keyboard_btns
 };
 // Include ask module
 bot.use(require('./node_modules/telebot/modules/ask'));
 /**************LOGIC*************/
 bot.on('/start', function (msg) {
     /** @namespace msg.from.first_name */
-    bot.sendMessage(msg.from.id, "Hello " + msg.from.first_name + "", KEYBOARD);
+    bot.sendMessage(msg.from.id, "Hello " + msg.from.first_name + "", MAIN_KEYBOARD);
 });
 bot.on('/help', function (msg) {
     var text =
@@ -41,7 +48,7 @@ bot.on('/help', function (msg) {
         "3⃣ To complete task, use /doit.\n" +
         "4⃣ To show expired tasks, use /expired.\n" +
         "5⃣ If you want get task(s) by ID or certain date, use /task.";
-    bot.sendMessage(msg.from.id, text, KEYBOARD);
+    bot.sendMessage(msg.from.id, text, MAIN_KEYBOARD);
 });
 bot.on('/list', function (msg) {
     MongoClient.connect(URL, function (err, db) {
@@ -97,7 +104,8 @@ bot.on('ask.task_do_date', function (msg) {
 bot.on('/cancel', function (msg) {
     USER_ADD_TASK_ARRAY = {};
     var text = 'Operation canceled.';
-    bot.sendMessage(msg.from.id, text);
+
+    bot.sendMessage(msg.from.id, text, MAIN_KEYBOARD);
 });
 bot.on('/doit', function (msg) {
     var chatId = msg.from.id;
@@ -132,7 +140,9 @@ bot.on('ask.task_number', function (msg) {
 });
 bot.on('/task', function (msg) {
     var text = 'Send /id or /date to find task(s) or /cancel to abort operation.';
-    bot.sendMessage(msg.chat.id, text, {ask: 'task_type'});
+    var opts = SECOND_KEYBOARD;
+    opts['ask']='task_type';
+    bot.sendMessage(msg.chat.id, text, opts);
 });
 bot.on('ask.task_type', function (msg) {
     var text = '';
@@ -165,7 +175,7 @@ bot.on('ask.task_param', function (msg) {
                 else
                     text = 'Sorry, but nothing found.';
                 db.close();
-                bot.sendMessage(msg.from.id, text);
+                bot.sendMessage(msg.from.id, text, MAIN_KEYBOARD);
             });
         });
     }
