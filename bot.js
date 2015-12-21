@@ -67,9 +67,9 @@ bot.on('/list', function (msg) {
                     text += printTaskText(data[i]);
                 }
             else
-                text = 'You do not have tasks. Use /add to add new task.';
+                text = 'You do not have tasks. Use /add to *add* new task.';
             db.close();
-            bot.sendMessage(userId, text);
+            bot.sendMessage(userId, text,{parse_mode:"markdown"});
 
         });
 
@@ -77,15 +77,15 @@ bot.on('/list', function (msg) {
 });
 bot.on('/add', function (msg) {
     var chatId = msg.from.id;
-    var text = 'Write and send TASK TEXT (send /cancel to abort operation):';
-    bot.sendMessage(chatId, text, {ask: 'task_text'});
+    var text = 'Write and send *task text* or /cancel to *abort operation*:';
+    bot.sendMessage(chatId, text, {ask: 'task_text',parse_mode:"markdown"});
 });
 bot.on('ask.task_text', function (msg) {
     var cancel = msg.text === '/cancel';
     if (!cancel) {
         USER_ADD_TASK_ARRAY['task_text'] = msg.text;
-        var text = 'Write date of completion (send /cancel to abort operation):';
-        bot.sendMessage(msg.from.id, text, {ask: 'task_do_date'});
+        var text = 'Write *date of completion* or /cancel to *abort operation*:';
+        bot.sendMessage(msg.from.id, text, {ask: 'task_do_date',parse_mode:"markdown"});
     }
 });
 bot.on('ask.task_do_date', function (msg) {
@@ -115,17 +115,22 @@ bot.on('/cancel', function (msg) {
 });
 bot.on('/doit', function (msg) {
     var chatId = msg.from.id;
-    var text = 'Write task ID to complete it, or /cancel to abort operation.';
-    bot.sendMessage(chatId, text, {ask: 'task_number'});
+    var text = 'Write task *ID* to complete it, or /cancel to *abort operation*.';
+    var opts = CANCEL_KEYBOARD;
+    opts['ask']='task_number';
+    opts['parse_mode']='markdown';
+    bot.sendMessage(chatId, text, opts);
 });
 bot.on('ask.task_number', function (msg) {
     var cancel = msg.text === '/cancel';
+    var opts = CANCEL_KEYBOARD;
     if (!cancel) {
         var userId = msg.from.id;
         var number = Number(msg.text);
         if (!number) {
-            var text = 'Incorrect number. Please, try again, or abort operation (/cancel).';
-            return bot.sendMessage(userId, text, {ask: 'task_number'});
+            var text = 'Incorrect number. Please, try again, or /cancel to *abort operation*.';
+            opts['ask']='task_number';
+            return bot.sendMessage(userId, text, opts);
         }
         else {
             MongoClient.connect(URL, function (err, db) {
@@ -136,7 +141,7 @@ bot.on('ask.task_number', function (msg) {
                         text = '⭐Task #' + number + ' is complete⭐';
                     else
                         text = 'Task #' + number + ' isn\'t updated.';
-                    return bot.sendMessage(userId, text);
+                    return bot.sendMessage(userId, text, MAIN_KEYBOARD);
                 });
 
 
@@ -145,9 +150,10 @@ bot.on('ask.task_number', function (msg) {
     }
 });
 bot.on('/task', function (msg) {
-    var text = 'Send /id or /date to find task(s) or /cancel to abort operation.';
+    var text = 'Send /id or /date to find task(s) or /cancel to *abort operation*.';
     var opts = SECOND_KEYBOARD;
     opts['ask'] = 'task_type';
+    opts['parse_mode'] = 'markdown';
     bot.sendMessage(msg.chat.id, text, opts);
 });
 bot.on('ask.task_type', function (msg) {
@@ -156,12 +162,12 @@ bot.on('ask.task_type', function (msg) {
     if (!cancel) {
         switch (msg.text) {
             case '/id':
-                text = 'Send task ID or /cancel to abort operation.';
-                opts = {ask: "task_param"};
+                text = 'Send task *ID* or /cancel to *abort operation*.';
+                opts = {ask: "task_param",parse_mode:"markdown"};
                 break;
             case '/date':
-                text = 'Send date in format dd.mm.yyyy or /cancel to abort operation.';
-                opts = {ask: "task_param"};
+                text = 'Send *date* in format dd.mm.yyyy or /cancel to *abort operation*.';
+                opts = {ask: "task_param",parse_mode:"markdown"};
                 break;
             default :
                 text = 'Invalid parameter. Use /id, /date or /cancel.';
@@ -189,16 +195,18 @@ bot.on('ask.task_param', function (msg) {
                     for (var i = 0; i < data.length; i++)
                         text += printTaskText(data[i]);
                 else
-                    text = 'Sorry, but nothing found.';
+                    text = 'Nothing found.';
                 db.close();
-                bot.sendMessage(msg.from.id, text, MAIN_KEYBOARD);
+                var op = MAIN_KEYBOARD;
+                op["parse_mode"]="markdown";
+                bot.sendMessage(msg.from.id, text, op);
             });
         });
     }
 });
 bot.on('/delete', function (msg) {
-    var text = 'Send task ID or /cancel to abort operation.';
-    bot.sendMessage(msg.from.id, text, {ask: "task_delete"});
+    var text = 'Send task *ID* or /cancel to *abort operation*.';
+    bot.sendMessage(msg.from.id, text, {ask: "task_delete",parse_mode:"markdown"});
 });
 bot.on('ask.task_delete', function (msg) {
     var cancel = msg.text === '/cancel';
@@ -207,25 +215,25 @@ bot.on('ask.task_delete', function (msg) {
 
         var number = Number(msg.text);
         if (!number) {
-            var text = 'Incorrect number. Please, try again, or abort operation (/cancel).';
-            return bot.sendMessage(msg.from.id, text, {ask: "task_delete"});
+            var text = 'Incorrect number. Please, try again, or /cancel to *abort operation*.';
+            return bot.sendMessage(msg.from.id, text, {ask: "task_delete",parse_mode:"markdown"});
         }
         opts = {owner_id: msg.from.id, task_number: number};
         MongoClient.connect(URL, function (err, db) {
             MongoOp.deleteDocument(db, opts, function (data) {
                 var text = '3213';
                 if (data.result.n)
-                    text = '⭐Task with #' + number + ' was successfully removed⭐';
+                    text = '⭐Task with *#' + number + '* was successfully removed⭐';
                 else
                     text = 'Task was not removed :(';
                 db.close();
-                return bot.sendMessage(msg.from.id, text);
+                return bot.sendMessage(msg.from.id, text,{parse_mode:"markdown"});
             });
         });
     }
 });
 bot.on('/expired', function (msg) {
-    var text = 'Sorry, but nothing found.';
+    var text = 'Nothing found.';
     MongoClient.connect(URL, function (err, db) {
         var opts = {owner_id: msg.from.id, do_date: {'$lte': getSysdate()}, is_done: false};
         MongoOp.findDocuments(db, opts, function (data) {
@@ -238,7 +246,7 @@ bot.on('/expired', function (msg) {
             else
                 text = 'You do not have expired tasks.';
             db.close();
-            return bot.sendMessage(msg.from.id, text);
+            return bot.sendMessage(msg.from.id, text,{parse_mode:"markdown"});
         });
     });
 
