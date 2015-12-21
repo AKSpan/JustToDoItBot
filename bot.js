@@ -15,7 +15,7 @@ var bot = new TeleBot({
     token: props.token,
     sleep: 1000, // How often check updates (in ms)
     timeout: 0, // Update pulling timeout (0 - short polling)
-    limit: 90 // Limits the number of updates to be retrieved
+    limit: 10 // Limits the number of updates to be retrieved
 });
 var main_keyboard_btns = bot.keyboard([
     ['/list', '/task'],
@@ -27,11 +27,17 @@ var secondary_keyboard_btns = bot.keyboard([
     ['/id', '/date'],
     ['/cancel']
 ], {resize: true, once: false});
+var cancel_btns = bot.keyboard([
+    ['/cancel']
+], {resize: true, once: false});
 var MAIN_KEYBOARD = {
     markup: main_keyboard_btns
 };
 var SECOND_KEYBOARD = {
     markup: secondary_keyboard_btns
+};
+var CANCEL_KEYBOARD = {
+    markup: cancel_btns
 };
 // Include ask module
 bot.use(require('./node_modules/telebot/modules/ask'));
@@ -141,18 +147,28 @@ bot.on('ask.task_number', function (msg) {
 bot.on('/task', function (msg) {
     var text = 'Send /id or /date to find task(s) or /cancel to abort operation.';
     var opts = SECOND_KEYBOARD;
-    opts['ask']='task_type';
+    opts['ask'] = 'task_type';
     bot.sendMessage(msg.chat.id, text, opts);
 });
 bot.on('ask.task_type', function (msg) {
-    var text = '';
+    var text = '', opts;
     var cancel = msg.text === '/cancel';
     if (!cancel) {
-        if (msg.text === '/id')
-            text = 'Send task ID or /cancel to abort operation.';
-        if (msg.text === '/date')
-            text = 'Send date in format dd.mm.yyyy or /cancel to abort operation.';
-        bot.sendMessage(msg.from.id, text, {ask: "task_param"});
+        switch (msg.text) {
+            case '/id':
+                text = 'Send task ID or /cancel to abort operation.';
+                opts = {ask: "task_param"};
+                break;
+            case '/date':
+                text = 'Send date in format dd.mm.yyyy or /cancel to abort operation.';
+                opts = {ask: "task_param"};
+                break;
+            default :
+                text = 'Invalid parameter. Use /id, /date or /cancel.';
+                opts = {ask: "task_type"};
+                break;
+        }
+        bot.sendMessage(msg.from.id, text, opts);
     }
 });
 bot.on('ask.task_param', function (msg) {
