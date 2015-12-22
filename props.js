@@ -1,4 +1,4 @@
-var token ='<TOKEN>';
+var token ='';
 module.exports.token = token;
-var url ='<DB_URL>';
+var url ='mongodb://localhost:27017/akdb';
 module.exports.url = url;
