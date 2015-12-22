@@ -5,7 +5,7 @@ var Localizer = function (alang) {
     this.settings = {lang: alang || 'en_US'};
     this.messages = {};
     this.tr = function (param, lang) {
-        var lang = lang || this.settings.lang;
+        lang = lang || this.settings.lang;
         var translated = '', code;
         var params = param.toLowerCase().split(':');
         if (this.messages[lang] !== undefined && params.length) {
