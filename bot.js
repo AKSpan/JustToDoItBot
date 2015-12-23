@@ -33,7 +33,7 @@ bot.use(require('./node_modules/telebot/modules/ask'));
 //<editor-fold desc="KEYBOARDS">
 var MAIN_KEYBOARD = {
     markup: bot.keyboard([
-        ["/list "+String.fromCharCode(0xD83D ,0xDCD2), '/task '+String.fromCharCode(0xD83D ,0xDCDD)],
+        ["/list " + String.fromCharCode(0xD83D, 0xDCD2), '/task ' + String.fromCharCode(0xD83D, 0xDCDD)],
         ['/add \u2795', '/doit \u2705'],
         ['/expired \u231b', '/delete \u274c'],
         ['/help \u2753']
@@ -41,7 +41,7 @@ var MAIN_KEYBOARD = {
 };
 var SECOND_KEYBOARD = {
     markup: bot.keyboard([
-        ['/id '+String.fromCharCode(0xD83C ,0xDD94), '/date '+String.fromCharCode(0xD83D ,0xDCC6)],
+        ['/id ' + String.fromCharCode(0xD83C, 0xDD94), '/date ' + String.fromCharCode(0xD83D, 0xDCC6)],
         ['/cancel \u26D4']
     ], {resize: true, once: false})
 };
@@ -52,12 +52,20 @@ var CANCEL_KEYBOARD = {
 };
 var LANGUAGE_KEYBOARD = {
     markup: bot.keyboard([
-        ['/ru '+String.fromCharCode(0xD83C ,0xDDF7,0xD83C,0xDDFA), '/en '+String.fromCharCode(0xD83C ,0xDDFA,0xD83C,0xDDF8)]
+        ['/ru ' + String.fromCharCode(0xD83C, 0xDDF7, 0xD83C, 0xDDFA), '/en ' + String.fromCharCode(0xD83C, 0xDDFA, 0xD83C, 0xDDF8)]
     ], {resize: true, once: false})
 };
 //</editor-fold>
 bot.on('/test', function (msg) {
-    bot.sendMessage(msg.from.id,"\ud83d\udc4e");
+    //try {
+    //    MongoClient.connect(URL, function (err, db) {
+    //        console.log(err);
+    //        console.log(db);
+    //    });
+    //}
+    //catch (ex) {
+    //    console.log('ex = ', ex)
+    //}
 });
 //<editor-fold desc="/start">
 bot.on('/start', function (msg) {
@@ -141,7 +149,7 @@ bot.on('ask.task_text', function (msg) {
 //</editor-fold>
 //<editor-fold desc="/add->task_do_date">
 bot.on('ask.task_do_date', function (msg) {
-    var cancel =  msg.text.indexOf('/cancel') > -1;
+    var cancel = msg.text.indexOf('/cancel') > -1;
     if (!cancel) {
         USER_ADD_TASK_ARRAY['do_date'] = msg.text;
         var opts = {
@@ -178,7 +186,7 @@ bot.on('/doit', function (msg) {
 //</editor-fold>
 //<editor-fold desc="/doit->task_number">
 bot.on('ask.task_number', function (msg) {
-    var cancel =  msg.text.indexOf('/cancel') > -1;
+    var cancel = msg.text.indexOf('/cancel') > -1;
     var opts = CANCEL_KEYBOARD;
     var userId = msg.from.id;
 
@@ -227,10 +235,11 @@ bot.on('/task', function (msg) {
 //<editor-fold desc="/task->task_type">
 bot.on('ask.task_type', function (msg) {
     var text = '', opts;
-    var cancel =  msg.text.indexOf('/cancel') > -1;
+    var cancel = msg.text.indexOf('/cancel') > -1;
     opts = CANCEL_KEYBOARD;
     if (!cancel) {
-        switch (msg.text) {
+        var currCommand = msg.text.split(' ')[0];
+        switch (currCommand) {
             case '/id':
                 text = LOCALIZATION.tr('task:task_type:id', USER_LANG);
                 opts['ask'] = "task_param";
@@ -252,7 +261,7 @@ bot.on('ask.task_type', function (msg) {
 //</editor-fold>
 //<editor-fold desc="/task->task_param">
 bot.on('ask.task_param', function (msg) {
-    var cancel =  msg.text.indexOf('/cancel') > -1;
+    var cancel = msg.text.indexOf('/cancel') > -1;
     var opts = {owner_id: msg.from.id, task_number: -1};
     if (!cancel) {
         var number = Number(msg.text);
@@ -290,7 +299,7 @@ bot.on('/delete', function (msg) {
 //</editor-fold>
 //<editor-fold desc="/delete->task_delete">
 bot.on('ask.task_delete', function (msg) {
-    var cancel =  msg.text.indexOf('/cancel') > -1;
+    var cancel = msg.text.indexOf('/cancel') > -1;
     var opts = {owner_id: msg.from.id, task_number: -1};
     var msg_opts = CANCEL_KEYBOARD;
     msg_opts['parse_mode'] = 'markdown';
@@ -302,6 +311,7 @@ bot.on('ask.task_delete', function (msg) {
             return bot.sendMessage(msg.from.id, text, msg_opts);
         }
         opts = {owner_id: msg.from.id, task_number: number};
+
         MongoClient.connect(URL, function (err, db) {
             MongoOp.deleteDocument(db, opts, function (data) {
                 var text = '3213';
