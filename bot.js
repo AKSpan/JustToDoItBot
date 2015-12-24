@@ -33,13 +33,12 @@ bot.use(require('./node_modules/telebot/modules/ask'));
 //<editor-fold desc="KEYBOARDS">
 var MAIN_KEYBOARD = {
     markup: bot.keyboard([
-        ["/list " + String.fromCharCode(0xD83D, 0xDCD2), '/search ' + String.fromCharCode(0xD83D, 0xDCDD)],
+        ["/list " + String.fromCharCode(0xD83D, 0xDCD2)],
         ['/add \u2795', '/doit \u2705'],
-        ['/expired \u231b', '/delete \u274c'],
-        ['/help \u2753']
+        ['/more ' + String.fromCharCode(0x25B6)]
     ], {resize: true, once: false})
 };
-var SECOND_KEYBOARD = {
+var ID_DATE_KEYBOARD = {
     markup: bot.keyboard([
         ['/id ' + String.fromCharCode(0xD83C, 0xDD94), '/date ' + String.fromCharCode(0xD83D, 0xDCC6)],
         ['/cancel \u26D4']
@@ -55,18 +54,28 @@ var LANGUAGE_KEYBOARD = {
         ['/ru ' + String.fromCharCode(0xD83C, 0xDDF7, 0xD83C, 0xDDFA), '/en ' + String.fromCharCode(0xD83C, 0xDDFA, 0xD83C, 0xDDF8)]
     ], {resize: true, once: false})
 };
+var MORE_KEYBOARD = {
+    markup: bot.keyboard([
+        ['/search ' + String.fromCharCode(0xD83D, 0xDCDD),
+            '/expired \u231b', '/delete \u274c'],
+        ['/instruction ' + String.fromCharCode(0xD83D, 0xDCD5)],
+        ['/help \u2753', '/back ' + String.fromCharCode(0xD83D, 0xDD19)]
+    ], {resize: true, once: false})
+};
 //</editor-fold>
-bot.on('/test', function (msg) {
-    //try {
-    //    MongoClient.connect(URL, function (err, db) {
-    //        console.log(err);
-    //        console.log(db);
-    //    });
-    //}
-    //catch (ex) {
-    //    console.log('ex = ', ex)
-    //}
+
+
+//<editor-fold desc="/more">
+bot.on('/more', function (msg) {
+    bot.sendMessage(msg.from.id, "...", MORE_KEYBOARD);
 });
+//</editor-fold>
+//<editor-fold desc="/back">
+bot.on('/back', function (msg) {
+    var opts = MAIN_KEYBOARD;
+    bot.sendMessage(msg.from.id, "...", opts);
+});
+//</editor-fold>
 //<editor-fold desc="/start">
 bot.on('/start', function (msg) {
     /** @namespace msg.from.first_name */
@@ -94,7 +103,7 @@ bot.on('/language', function (msg) {
 //<editor-fold desc="/help">
 bot.on('/help', function (msg) {
     var text = LOCALIZATION.tr('help', USER_LANG);
-    bot.sendMessage(msg.from.id, text, MAIN_KEYBOARD);
+    bot.sendMessage(msg.from.id, text);
 });
 //</editor-fold>
 //<editor-fold desc="/list">
@@ -226,7 +235,7 @@ bot.on('ask.task_number', function (msg) {
 //<editor-fold desc="/search">
 bot.on('/search', function (msg) {
     var text = LOCALIZATION.tr('search:task_text', USER_LANG);
-    var opts = SECOND_KEYBOARD;
+    var opts = ID_DATE_KEYBOARD;
     opts['ask'] = 'search_type';
     opts['parse_mode'] = 'markdown';
     bot.sendMessage(msg.chat.id, text, opts);
@@ -252,7 +261,7 @@ bot.on('ask.search_type', function (msg) {
                 break;
             default :
                 text = LOCALIZATION.tr('search:search_type:invalid', USER_LANG);
-                opts = SECOND_KEYBOARD;
+                opts = ID_DATE_KEYBOARD;
                 opts['ask'] = "search_type";
                 break;
         }
@@ -303,9 +312,9 @@ bot.on('ask.task_param_id', function (msg) {
         }
         else {
             text = LOCALIZATION.tr('search:invalid_id', USER_LANG);
-            opts = SECOND_KEYBOARD;
+            opts = ID_DATE_KEYBOARD;
             opts['ask'] = 'task_param_id';
-            bot.sendMessage(msg.from.id, text, SECOND_KEYBOARD);
+            bot.sendMessage(msg.from.id, text, ID_DATE_KEYBOARD);
         }
 
     }

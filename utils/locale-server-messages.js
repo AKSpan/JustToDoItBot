@@ -55,7 +55,18 @@ var en_US = {
         not_found: 'Nothing found.',
         no_expired: 'You do not have expired tasks.'
     },
-    text_invalid: "Sorry, but text cannot begin like command (with '/'). Try again or /cancel to *abort operation*:"
+    text_invalid: "Sorry, but text cannot begin like command (with '/'). Try again or /cancel to *abort operation*:",
+    faq:"*1. How add task?*\n" +
+    "Use /add command. Then you should write a task text. You can use any characters, except character '/'. Only *commands* can start with '/'.\n" +
+    "After select the end date of the task. The task will be added if the text of the problem or the date indicated correctly.\n" +
+    "*2. How I can show my tasks?*\n" +
+    "Use command /list to show your tasks.\n" +
+    "*3. How do I mark a task as completed?*\n" +
+    "Send to bot command /doit and then select task ID which You completed. To avoid confusion, specify the ID as number.\n" +
+    "*4. Where I can find search function and how does it work?*\n" +
+    "Send bot a /more command to get /search and other commands. You can find task by ID and by date of completion.\n" +
+    "If find by ID, You can specify either a single ID _(ex. 1 or 5)_ and multiple IDs _(ex. 2,5,7)_or IDs range _(ex. 1..3 or 4..10)_.\n" +
+    "When searching by date of completion send date in format dd.mm.yyyy HH24:mm:ss."
 
 };
 module.exports.en_US = en_US;
