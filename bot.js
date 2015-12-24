@@ -314,15 +314,10 @@ bot.on('ask.task_param_id', function (msg) {
 //<editor-fold desc="/search->task_param_date">
 bot.on('ask.task_param_date', function (msg) {
     var cancel = msg.text.indexOf('/cancel') > -1;
-    var opts = {owner_id: msg.from.id, task_number: -1};
+    var opts;
     if (!cancel) {
-        var number = Number(msg.text);
-        if (number)
-            opts = {owner_id: msg.from.id, task_number: number};
-        else {
-            if (msg.text.indexOf('.') > -1)
-                opts = {owner_id: msg.from.id, do_date: new RegExp('^' + msg.text)};
-        }
+        opts = {owner_id: msg.from.id, do_date: new RegExp(msg.text)};
+
         MongoClient.connect(URL, function (err, db) {
             MongoOp.findDocuments(db, opts, function (data) {
                 var text = '';
@@ -337,6 +332,7 @@ bot.on('ask.task_param_date', function (msg) {
                 bot.sendMessage(msg.from.id, text, op);
             });
         });
+
     }
 });
 //</editor-fold>
