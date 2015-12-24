@@ -41,7 +41,7 @@ var en_US = {
         task_param: {
             not_found: 'Nothing found.'
         },
-        invalid_id:'Please write correct ID.'
+        invalid_id:'Please write correct *ID*.'
     },
     del: {
         id_text: 'Send task *ID* or /cancel to *abort operation*:',
@@ -100,7 +100,7 @@ var ru_RU = {
         task_param: {
             not_found: 'Ничего не найдено.'
         },
-        invalid_id:'Пожалуйста введите корректный ID.'
+        invalid_id:'Пожалуйста введите корректный *ID*.'
     },
     del: {
         id_text: 'Отправьте *ID* задачи или команду /cancel для *отмены операции*:',
