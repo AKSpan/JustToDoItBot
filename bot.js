@@ -33,7 +33,7 @@ bot.use(require('./node_modules/telebot/modules/ask'));
 //<editor-fold desc="KEYBOARDS">
 var MAIN_KEYBOARD = {
     markup: bot.keyboard([
-        ["/list " + String.fromCharCode(0xD83D, 0xDCD2), '/task ' + String.fromCharCode(0xD83D, 0xDCDD)],
+        ["/list " + String.fromCharCode(0xD83D, 0xDCD2), '/search ' + String.fromCharCode(0xD83D, 0xDCDD)],
         ['/add \u2795', '/doit \u2705'],
         ['/expired \u231b', '/delete \u274c'],
         ['/help \u2753']
@@ -223,17 +223,17 @@ bot.on('ask.task_number', function (msg) {
     }
 });
 //</editor-fold>
-//<editor-fold desc="/task">
-bot.on('/task', function (msg) {
-    var text = LOCALIZATION.tr('task:task_text', USER_LANG);
+//<editor-fold desc="/search">
+bot.on('/search', function (msg) {
+    var text = LOCALIZATION.tr('search:task_text', USER_LANG);
     var opts = SECOND_KEYBOARD;
-    opts['ask'] = 'task_type';
+    opts['ask'] = 'search_type';
     opts['parse_mode'] = 'markdown';
     bot.sendMessage(msg.chat.id, text, opts);
 });
 //</editor-fold>
-//<editor-fold desc="/task->task_type">
-bot.on('ask.task_type', function (msg) {
+//<editor-fold desc="/search->search_type">
+bot.on('ask.search_type', function (msg) {
     var text = '', opts;
     var cancel = msg.text.indexOf('/cancel') > -1;
     opts = CANCEL_KEYBOARD;
@@ -241,26 +241,78 @@ bot.on('ask.task_type', function (msg) {
         var currCommand = msg.text.split(' ')[0];
         switch (currCommand) {
             case '/id':
-                text = LOCALIZATION.tr('task:task_type:id', USER_LANG);
-                opts['ask'] = "task_param";
+                text = LOCALIZATION.tr('search:search_type:id', USER_LANG);
+                opts['ask'] = "task_param_id";
                 opts['parse_mode'] = "markdown";
                 break;
             case '/date':
-                text = LOCALIZATION.tr('task:task_type:date', USER_LANG);
-                opts['ask'] = "task_param";
+                text = LOCALIZATION.tr('search:search_type:date', USER_LANG);
+                opts['ask'] = "task_param_date";
                 opts['parse_mode'] = "markdown";
                 break;
             default :
-                text = LOCALIZATION.tr('task:task_type:invalid', USER_LANG);
-                opts['ask'] = "task_type";
+                text = LOCALIZATION.tr('search:search_type:invalid', USER_LANG);
+                opts = SECOND_KEYBOARD;
+                opts['ask'] = "search_type";
                 break;
         }
         bot.sendMessage(msg.from.id, text, opts);
     }
 });
 //</editor-fold>
-//<editor-fold desc="/task->task_param">
-bot.on('ask.task_param', function (msg) {
+//<editor-fold desc="/search->task_param_id">
+bot.on('ask.task_param_id', function (msg) {
+    var cancel = msg.text.indexOf('/cancel') > -1;
+    var opts;
+    var text = '';
+    if (!cancel) {
+        var idsArr;
+        var startId, endId;
+        /************Check seq*********/
+        if (msg.text.indexOf(',') > -1)
+            idsArr = msg.text.split(',');
+        else {
+            if (msg.text.indexOf('..') > -1) {
+                idsArr = msg.text.split('..');
+                startId = idsArr[0].replace('.', '');
+                endId = idsArr[1].replace('.', '');
+            }
+            else
+                idsArr = [msg.text];
+        }
+        /*****************************/
+        if (validationIDs(idsArr)) {
+            idsArr = stingArrayToNumber(idsArr);
+            if (typeof startId !== 'undefined' && typeof endId !== 'undefined')
+                opts = {owner_id: msg.from.id, task_number: {$gte: parseInt(startId), $lte: parseInt(endId)}};
+            else
+                opts = {owner_id: msg.from.id, task_number: {$in: idsArr}};
+            MongoClient.connect(URL, function (err, db) {
+                MongoOp.findDocuments(db, opts, function (data) {
+                    if (data.length > 0)
+                        for (var i = 0; i < data.length; i++)
+                            text += printTaskText(data[i], USER_LANG);
+                    else
+                        text = LOCALIZATION.tr('search:task_param:not_found', USER_LANG);
+                    db.close();
+                    opts = MAIN_KEYBOARD;
+                    opts["parse_mode"] = "markdown";
+                    bot.sendMessage(msg.from.id, text, opts);
+                });
+            });
+        }
+        else {
+            text = LOCALIZATION.tr('search:invalid_id', USER_LANG);
+            opts = SECOND_KEYBOARD;
+            opts['ask'] = 'task_param_id';
+            bot.sendMessage(msg.from.id, text, SECOND_KEYBOARD);
+        }
+
+    }
+});
+//</editor-fold>
+//<editor-fold desc="/search->task_param_date">
+bot.on('ask.task_param_date', function (msg) {
     var cancel = msg.text.indexOf('/cancel') > -1;
     var opts = {owner_id: msg.from.id, task_number: -1};
     if (!cancel) {
@@ -278,7 +330,7 @@ bot.on('ask.task_param', function (msg) {
                     for (var i = 0; i < data.length; i++)
                         text += printTaskText(data[i], USER_LANG);
                 else
-                    text = LOCALIZATION.tr('task:task_param:not_found', USER_LANG);
+                    text = LOCALIZATION.tr('search:task_param:not_found', USER_LANG);
                 db.close();
                 var op = MAIN_KEYBOARD;
                 op["parse_mode"] = "markdown";
@@ -356,19 +408,34 @@ var printTaskText = function (data, lang) {
     /** @namespace data.done_date */
     /** @namespace data.created_date */
     return String.format(LOCALIZATION.tr('print_task_text', lang), data.task_number, data.task_text, data.do_date,
-        ( (data.is_done == true) ? "✅" : "❌"), data.done_date, data.created_date);
+        ( (data.is_done == true) ? "\u2705" : "\u274c"), data.done_date, data.created_date);
 };
 var getSysdate = function () {
     var today = new Date();
     return today.format(DATE_FORMAT);
 };
 var validateText = function (text) {
-    console.log("let's valid this", text);
     if (text.startsWith('/')) {
         return LOCALIZATION.tr('text_invalid', USER_LANG);
     }
     return "";
 };
-
+var validationIDs = function (ids) {
+    var tmp = true;
+    if (Array.isArray(ids)) {
+        ids.forEach(function (id) {
+            if (isNaN(id))
+                tmp = false;
+        });
+    }
+    else
+        tmp = !isNaN(ids);
+    return tmp;
+};
+var stingArrayToNumber = function (arr) {
+    return arr.map(function (a) {
+        return parseInt(a);
+    });
+};
 module.exports.getSysdate = getSysdate;
 bot.connect();

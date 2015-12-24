@@ -9,7 +9,7 @@ var en_US = {
     "\u0032\u20e3 To add new task, use /add. \n" +
     "\u0033\u20e3 To complete task, use /doit.\n" +
     "\u0034\u20e3 To show expired tasks, use /expired.\n" +
-    "\u0035\u20e3 If you want get task(s) by ID or certain date, use /task.\n" +
+    "\u0035\u20e3 If you want get task(s) by ID or certain date, use /search.\n" +
     "\u0036\u20e3 For select language, use /language",
     print_task_text: "============*{0}*============\n" +
     "*Text:* {1}\n" +
@@ -31,16 +31,17 @@ var en_US = {
         incorrect_num: 'Incorrect number. Please, try again, or /cancel to *abort operation*:',
         upd_err: 'Task *#{0}* isn\'t updated.'
     },
-    task: {
+    search: {
         task_text: 'Send /id or /date to find task(s) or /cancel to *abort operation*:',
-        task_type: {
+        search_type: {
             id: 'Send task *ID* or /cancel to *abort operation*:',
             date: 'Send *date* in format dd.mm.yyyy or /cancel to *abort operation*:',
             invalid: 'Invalid parameter. Use /id, /date or /cancel.'
         },
         task_param: {
             not_found: 'Nothing found.'
-        }
+        },
+        invalid_id:'Please write correct ID.'
     },
     del: {
         id_text: 'Send task *ID* or /cancel to *abort operation*:',
@@ -66,7 +67,7 @@ var ru_RU = {
     "\u0032\u20e3 Для добавления новой задачи используйте команду /add.\n" +
     "\u0033\u20e3 Чтобы выполнить задачу, используйте /doit.\n" +
     "\u0034\u20e3 Команда /expired выведет невыполненные просроченные задачи.\n" +
-    "\u0035\u20e3 Если хотите просмотреть задачу(и) по её ID или по определенной дате, используйте /task.\n" +
+    "\u0035\u20e3 Если хотите просмотреть задачу(и) по её ID или по определенной дате, используйте /search.\n" +
     "\u0036\u20e3 Для смены языка используйте команду /language.",
     print_task_text: "============*{0}*============\n" +
     "*Текст:* {1}\n" +
@@ -89,16 +90,17 @@ var ru_RU = {
         incorrect_num: 'Некорректный номер. Попробуйте заного или отправьте команду /cancel для *отмены операции*:',
         upd_err: 'Не удалось обновить задачу с *#{0}*.'
     },
-    task: {
+    search: {
         task_text: 'Отправьте команду /id или /date, чтобы найти задачу(и) или команду /cancel для *отмены операции*:',
-        task_type: {
+        search_type: {
             id: 'Отправьте *ID* задачи или команду /cancel для *отмены операции*:',
             date: 'Отправьте *Дату выполнения* в формате дд.мм.гггг (ЧЧ24:ММ:сс) или команду /cancel для *отмены операции*:',
             invalid: 'Неверный параметр. Используйте команды /id, /date или /cancel.'
         },
         task_param: {
             not_found: 'Ничего не найдено.'
-        }
+        },
+        invalid_id:'Пожалуйста введите корректный ID.'
     },
     del: {
         id_text: 'Отправьте *ID* задачи или команду /cancel для *отмены операции*:',
