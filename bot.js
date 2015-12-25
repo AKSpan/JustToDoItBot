@@ -79,9 +79,6 @@ var MORE_KEYBOARD = {
 };
 //</editor-fold>
 
-bot.on('/test', function (msg) {
-
-});
 //<editor-fold desc="/more">
 bot.on('/more', function (msg) {
     bot.sendMessage(msg.from.id, "...", MORE_KEYBOARD);
@@ -357,24 +354,33 @@ bot.on('ask.task_param_id', function (msg) {
 //<editor-fold desc="/search->task_param_date">
 bot.on('ask.task_param_date', function (msg) {
     var cancel = msg.text.indexOf('/cancel') > -1;
-    var opts;
+    var opts, text='';
     if (!cancel) {
-        opts = {owner_id: msg.from.id, do_date: new RegExp(msg.text)};
+        var valid = validateDate(msg.text);
+        if (valid.length == 0) {
+            opts = {owner_id: msg.from.id, do_date: new RegExp(msg.text)};
+            MongoClient.connect(URL, function (err, db) {
+                MongoOp.findDocuments(db, opts, function (data) {
 
-        MongoClient.connect(URL, function (err, db) {
-            MongoOp.findDocuments(db, opts, function (data) {
-                var text = '';
-                if (data.length > 0)
-                    for (var i = 0; i < data.length; i++)
-                        text += printTaskText(data[i], USER_LANG);
-                else
-                    text = LOCALIZATION.tr('search:task_param:not_found', USER_LANG);
-                db.close();
-                var op = MAIN_KEYBOARD;
-                op["parse_mode"] = "markdown";
-                bot.sendMessage(msg.from.id, text, op);
+                    if (data.length > 0)
+                        for (var i = 0; i < data.length; i++)
+                            text += printTaskText(data[i], USER_LANG);
+                    else
+                        text = LOCALIZATION.tr('search:task_param:not_found', USER_LANG);
+                    db.close();
+                    var op = MAIN_KEYBOARD;
+                    op["parse_mode"] = "markdown";
+                    bot.sendMessage(msg.from.id, text, op);
+                });
             });
-        });
+        }
+        else {
+            opts = CANCEL_KEYBOARD;
+            opts['ask'] = 'task_param_date';
+            opts["parse_mode"] = "markdown";
+            text = LOCALIZATION.tr('add:date_error', USER_LANG);
+            bot.sendMessage(msg.from.id, text, opts);
+        }
 
     }
 });

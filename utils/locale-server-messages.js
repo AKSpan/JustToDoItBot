@@ -37,7 +37,7 @@ var en_US = {
         task_text: 'Send /id or /date to find task(s) or /cancel to *abort operation*:',
         search_type: {
             id: 'Send task *ID* or /cancel to *abort operation*:',
-            date: 'Send *date* or *time* or /cancel to *abort operation*:',
+            date: 'Select date in *DD.MM.YYYY* or *DD.MM.YYYY HH24:MM:SS* format or /cancel to *abort operation*:',
             invalid: 'Invalid parameter. Use /id, /date or /cancel.'
         },
         task_param: {
@@ -97,7 +97,8 @@ var ru_RU = {
         task_text: 'Отправьте команду /id или /date, чтобы найти задачу(и) или команду /cancel для *отмены операции*:',
         search_type: {
             id: 'Отправьте *ID* задачи или команду /cancel для *отмены операции*:',
-            date: 'Отправьте *дату* или *время* или команду /cancel для *отмены операции*:',
+            /*Select date in *DD.MM.YYYY* or *DD.MM.YYYY HH24:MM:SS* format or /cancel to *abort operation*:*/
+            date: 'Отправьте *дату* в формате *ДД.ММ.ГГГГ* или *ДД.ММ.ГГГГ ЧЧ24:ММ:СС* или команду /cancel для *отмены операции*:',
             invalid: 'Неверный параметр. Используйте команды /id, /date или /cancel.'
         },
         task_param: {
