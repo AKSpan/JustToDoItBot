@@ -6,7 +6,7 @@ var DB_NAME = 'list_task';
 var utils = require('./../bot');
 var findDocuments = function (db, opts, callback) {
     var collection = db.collection(DB_NAME);
-    collection.find(opts).limit(10).toArray(function (err, docs) {
+    collection.find(opts).toArray(function (err, docs) {
         callback(docs);
     });
 };

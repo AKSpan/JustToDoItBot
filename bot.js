@@ -9,6 +9,7 @@ var props = require('./props');
 var MongoOp = require('./mongo/mongoOperations');
 require('./utils/dateformat');
 require('./utils/format');
+var moment = require('moment');
 var Localization = require('./utils/translate-js');
 var validator = require('validator');
 //</editor-fold>
@@ -34,37 +35,53 @@ bot.use(require('./node_modules/telebot/modules/ask'));
 var MAIN_KEYBOARD = {
     markup: bot.keyboard([
         ["/list " + String.fromCharCode(0xD83D, 0xDCD2)],
-        ['/add \u2795', '/doit \u2705'],
+        [
+            '/add ' + String.fromCharCode(0x2795),
+            '/doit ' + String.fromCharCode(0x2705)
+        ],
         ['/more ' + String.fromCharCode(0x25B6)]
     ], {resize: true, once: false})
 };
 var ID_DATE_KEYBOARD = {
     markup: bot.keyboard([
-        ['/id ' + String.fromCharCode(0xD83C, 0xDD94), '/date ' + String.fromCharCode(0xD83D, 0xDCC6)],
-        ['/cancel \u26D4']
+        [
+            '/id ' + String.fromCharCode(0xD83C, 0xDD94),
+            '/date ' + String.fromCharCode(0xD83D, 0xDCC6)
+        ],
+        ['/cancel ' + String.fromCharCode(0x26D4)]
     ], {resize: true, once: false})
 };
 var CANCEL_KEYBOARD = {
     markup: bot.keyboard([
-        ['/cancel \u26D4']
+        ['/cancel ' + String.fromCharCode(0x26D4)]
     ], {resize: true, once: false})
 };
 var LANGUAGE_KEYBOARD = {
     markup: bot.keyboard([
-        ['/ru ' + String.fromCharCode(0xD83C, 0xDDF7, 0xD83C, 0xDDFA), '/en ' + String.fromCharCode(0xD83C, 0xDDFA, 0xD83C, 0xDDF8)]
+        [
+            '/ru ' + String.fromCharCode(0xD83C, 0xDDF7, 0xD83C, 0xDDFA),
+            '/en ' + String.fromCharCode(0xD83C, 0xDDFA, 0xD83C, 0xDDF8)
+        ]
     ], {resize: true, once: false})
 };
 var MORE_KEYBOARD = {
     markup: bot.keyboard([
-        ['/search ' + String.fromCharCode(0xD83D, 0xDCDD),
-            '/expired \u231b', '/delete \u274c'],
-        ['/instruction ' + String.fromCharCode(0xD83D, 0xDCD5)],
-        ['/help \u2753', '/back ' + String.fromCharCode(0xD83D, 0xDD19)]
+        [
+            '/search ' + String.fromCharCode(0xD83D, 0xDCDD),
+            '/expired ' + String.fromCharCode(0x231b),
+            '/delete ' + String.fromCharCode(0x274c)
+        ],
+        [
+            '/help ' + String.fromCharCode(0x2753),
+            '/back ' + String.fromCharCode(0xD83D, 0xDD19)
+        ]
     ], {resize: true, once: false})
 };
 //</editor-fold>
 
+bot.on('/test', function (msg) {
 
+});
 //<editor-fold desc="/more">
 bot.on('/more', function (msg) {
     bot.sendMessage(msg.from.id, "...", MORE_KEYBOARD);
@@ -73,7 +90,7 @@ bot.on('/more', function (msg) {
 //<editor-fold desc="/back">
 bot.on('/back', function (msg) {
     var opts = MAIN_KEYBOARD;
-    bot.sendMessage(msg.from.id, "...", opts);
+    bot.sendMessage(msg.from.id, '...', opts);
 });
 //</editor-fold>
 //<editor-fold desc="/start">
@@ -113,14 +130,17 @@ bot.on('/list', function (msg) {
         var opts = {owner_id: userId};
         MongoOp.findDocuments(db, opts, function (data) {
             var text = '';
-            if (data.length > 0)
+            if (data.length > 0) {
                 for (var i = 0; i < data.length; i++) {
                     text += printTaskText(data[i], USER_LANG);
                 }
+            }
             else
                 text = LOCALIZATION.tr('list:no_tasks_text', USER_LANG);
             db.close();
-            bot.sendMessage(userId, text, {parse_mode: "markdown"});
+            opts = {};
+            opts['parse_mode'] = 'markdown';
+            bot.sendMessage(userId, text, opts);
         });
     });
 });
@@ -159,20 +179,34 @@ bot.on('ask.task_text', function (msg) {
 //<editor-fold desc="/add->task_do_date">
 bot.on('ask.task_do_date', function (msg) {
     var cancel = msg.text.indexOf('/cancel') > -1;
+    var text;
+    var msg_opt = CANCEL_KEYBOARD;
     if (!cancel) {
-        USER_ADD_TASK_ARRAY['do_date'] = msg.text;
-        var opts = {
-            owner_id: msg.from.id,
-            do_date: USER_ADD_TASK_ARRAY.do_date,
-            task_text: USER_ADD_TASK_ARRAY.task_text
-        };
-        MongoClient.connect(URL, function (err, db) {
-            MongoOp.insertDocument(db, opts, function () {
-                USER_ADD_TASK_ARRAY = {};
-                var text = LOCALIZATION.tr('add:added', USER_LANG);
-                bot.sendMessage(msg.from.id, text, MAIN_KEYBOARD);
+        var valid = validateDate(msg.text)
+        if (valid.length == 0) {
+            USER_ADD_TASK_ARRAY['do_date'] = msg.text;
+            var opts = {
+                owner_id: msg.from.id,
+                do_date: USER_ADD_TASK_ARRAY.do_date,
+                task_text: USER_ADD_TASK_ARRAY.task_text
+            };
+            MongoClient.connect(URL, function (err, db) {
+                MongoOp.insertDocument(db, opts, function () {
+                    USER_ADD_TASK_ARRAY = {};
+                    text = LOCALIZATION.tr('add:added', USER_LANG);
+                    msg_opt = MAIN_KEYBOARD;
+                    msg_opt['parse_mode'] = 'markdown';
+                    bot.sendMessage(msg.from.id, text, msg_opt);
+                });
             });
-        });
+        }
+        else {
+            msg_opt['ask'] = 'task_do_date';
+            msg_opt['parse_mode'] = 'markdown';
+            text = valid;
+            bot.sendMessage(msg.from.id, text, msg_opt);
+        }
+
     }
 });
 //</editor-fold>
@@ -424,6 +458,24 @@ var validateText = function (text) {
         return LOCALIZATION.tr('text_invalid', USER_LANG);
     }
     return "";
+};
+var validateDate = function (date) {
+    var dateRegex = /^\d{2}(.)\d{2}\1\d{4}$/;
+    var timeRegex = /^\d{2}(:)\d{2}?(\1\d{2})?$/;
+    if (!date)
+        return LOCALIZATION.tr('add:date_error', USER_LANG);
+    var textArr = date.split(' ');
+    if (!dateRegex.test(textArr[0]))
+        return LOCALIZATION.tr('add:date_error', USER_LANG);
+
+    if (textArr[0].indexOf('.') <= -1)
+        return LOCALIZATION.tr('add:date_error', USER_LANG);
+    if (textArr[1])
+        if (!timeRegex.test(textArr[1]))
+            return LOCALIZATION.tr('add:date_error', USER_LANG);
+
+    return "";
+
 };
 var validationIDs = function (ids) {
     var tmp = true;
